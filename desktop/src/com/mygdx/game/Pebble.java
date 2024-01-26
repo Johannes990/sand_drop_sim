@@ -1,5 +1,7 @@
 package com.mygdx.game;
 
+import static java.lang.Math.abs;
+
 public class Pebble {
     private final long startTick;
     private final int y;
@@ -10,9 +12,9 @@ public class Pebble {
     public Pebble(long startTick, int y, float colorRate) {
         this.startTick = startTick;
         this.y = y;
-        this.red = (startTick * colorRate) % 1;
-        this.blue = 1 - (startTick % 100) * colorRate;
-        this.green = (startTick * colorRate * 1.6f) % 1;
+        this.red = 0.4f + (float) abs(-0.2 + ((startTick * colorRate) % 1) * 0.7);
+        this.blue = 0.6f + (float) abs(-0.1 + (startTick % 100) * colorRate * 0.2);
+        this.green = 0.14f + (float) abs(-0.5 + (startTick * colorRate * 1.6f) % 1);
     }
 
     public float getRed() {
