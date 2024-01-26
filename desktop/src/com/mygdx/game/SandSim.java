@@ -22,7 +22,7 @@ public class SandSim extends ApplicationAdapter {
 
     private static final int SCREEN_HEIGHT = 700;
     private static final int SCREEN_WIDTH = 1200;
-    private static final int SAND_SIZE = 25;
+    private static final int SAND_SIZE = 10;
     private static final int ROWS = SCREEN_HEIGHT / SAND_SIZE;
     private static final int COLS = SCREEN_WIDTH / SAND_SIZE;
     private final int[][] screenMatrix = new int[COLS][ROWS];
@@ -54,22 +54,14 @@ public class SandSim extends ApplicationAdapter {
         timeTick = getTimeTick(initialTimeMillis, currentTimeMillis, TICK_RATE);
 
         if (Gdx.input.isTouched()) {
-            Vector3 touchPos = new Vector3();
-            touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+            List<Integer> coordinates = getListOfCoordinates();
+            int x = coordinates.get(0);
+            int y = coordinates.get(1);
 
-            camera.unproject(touchPos);
-            int sandStartX = (int) (touchPos.x / SAND_SIZE);
-            int sandStartY = (int) (touchPos.y / SAND_SIZE);
-
-            if (screenMatrix[sandStartX][sandStartY] == 0) {
-                screenMatrix[sandStartX][sandStartY] = 1;
-                List<Integer> position = new ArrayList<>(Arrays.asList(sandStartX, sandStartY));
-                Pebble pebble = new Pebble(timeTick, sandStartX, sandStartY);
-                sandPebbles.put(position, pebble);
-                System.out.println("new pebble - red:" + pebble.getRed() + ", green:" + pebble.getGreen() + ", blue:" + pebble.getBlue());
+            if (screenMatrix[x][y] == 0) {
+                createNewPebble(x, y, coordinates);
             }
         }
-
 
         for (int i = 0; i < COLS; i++) {
             for (int j = 0; j < ROWS; j++) {
@@ -95,5 +87,21 @@ public class SandSim extends ApplicationAdapter {
         long deltaMillis = currentTimeMIllis - initialTimeMillis;
         double deltaInSec = deltaMillis * 0.001;
         return (long) (deltaInSec * tickRate);
+    }
+
+    private List<Integer> getListOfCoordinates() {
+        Vector3 touchPos = new Vector3();
+        touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+        camera.unproject(touchPos);
+        int sandStartX = (int) (touchPos.x / SAND_SIZE);
+        int sandStartY = (int) (touchPos.y / SAND_SIZE);
+        return new ArrayList<>(Arrays.asList(sandStartX, sandStartY));
+    }
+
+    private void createNewPebble(int x, int y, List<Integer> keyPair) {
+        screenMatrix[x][y] = 1;
+        Pebble pebble = new Pebble(timeTick, x, y);
+        sandPebbles.put(keyPair, pebble);
+        System.out.println("new pebble - red:" + pebble.getRed() + ", green:" + pebble.getGreen() + ", blue:" + pebble.getBlue());
     }
 }
