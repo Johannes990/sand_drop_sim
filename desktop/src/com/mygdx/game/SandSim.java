@@ -17,6 +17,7 @@ public class SandSim extends ApplicationAdapter {
     private ShapeRenderer shapeRenderer;
 
     private static final int TICK_RATE = 30;
+    private static final float COLOR_RATE = 0.004f;
     private long initialTimeMillis;
     private long timeTick;
     private static final double SPEED_COEFFICIENT = 1.0;
@@ -68,7 +69,6 @@ public class SandSim extends ApplicationAdapter {
             for (int j = 0; j < ROWS; j++) {
                 if (screenMatrix[i][j] == 1) {
                     movePebble(i, j);
-
                 }
             }
         }
@@ -105,20 +105,11 @@ public class SandSim extends ApplicationAdapter {
             sandPebbles.put(newKeyList, pebble);
         } else {
             int availableHeight = setFirstAvailablePosition(i, heightDelta);
-            screenMatrix[i][heightDelta + availableHeight] = 1;
-            List<Integer> newKeyList = new ArrayList<>(Arrays.asList(i, heightDelta + availableHeight));
+            int dX = getRollDirection(i, heightDelta + availableHeight);
+            screenMatrix[i + dX][heightDelta + availableHeight] = 1;
+            List<Integer> newKeyList = new ArrayList<>(Arrays.asList(i + dX, heightDelta + availableHeight));
             sandPebbles.put(newKeyList, pebble);
         }
-    }
-
-    private int setFirstAvailablePosition(int i, int heightDelta) {
-        int availableHeight = 1;
-
-        while (screenMatrix[i][heightDelta + availableHeight] != 0) {
-            availableHeight++;
-        }
-
-        return availableHeight;
     }
 
     @Override
@@ -159,8 +150,47 @@ public class SandSim extends ApplicationAdapter {
 
     private void createNewPebble(int x, int y, List<Integer> keyPair) {
         screenMatrix[x][y] = 1;
-        Pebble pebble = new Pebble(timeTick, x, y);
+        Pebble pebble = new Pebble(timeTick, y, COLOR_RATE);
         sandPebbles.put(keyPair, pebble);
+    }
+
+    private int setFirstAvailablePosition(int i, int heightDelta) {
+        int availableHeight = 1;
+
+        while (screenMatrix[i][heightDelta + availableHeight] != 0) {
+            availableHeight++;
+        }
+
+        return availableHeight;
+    }
+
+    private int getRollDirection(int x, int y) {
+        if (x - 1 >= 0 && x + 1 < COLS && (screenMatrix[x - 1][y - 1] == 0 || screenMatrix[x + 1][y - 1] == 0)) {
+            int decrementX = x - 1;
+            int incrementX = x + 1;
+
+            if (screenMatrix[decrementX][y - 1] == 0 && screenMatrix[incrementX][y - 1] == 0) {
+                return randomChoice(-1, 1);
+            } else if (screenMatrix[decrementX][y - 1] != 0) {
+                return randomChoice(1, 0);
+            } else if (screenMatrix[incrementX][y - 1] != 0) {
+                return randomChoice(-1, 0);
+            }
+        }
+        if (x - 1 <= 0 && screenMatrix[x + 1][y - 1] == 0) {
+            return randomChoice(0, 1);
+        }
+        if (x + 1 >= COLS && screenMatrix[x - 1][y - 1] == 0) {
+            return randomChoice(-1, 0);
+        }
+        return 0;
+    }
+
+    private static int randomChoice(int a, int b) {
+        if (Math.random() < 0.5) {
+            return a;
+        }
+        return b;
     }
 
     private void renderPebble(List<Integer> position, int i, int j) {
