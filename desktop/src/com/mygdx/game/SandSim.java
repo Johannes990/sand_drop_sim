@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class SandSim extends ApplicationAdapter {
     private OrthographicCamera camera;
@@ -20,7 +19,7 @@ public class SandSim extends ApplicationAdapter {
     private static final int TICK_RATE = 30;
     private long initialTimeMillis;
     private long timeTick;
-    private final double SPEED_COEFFICIENT = 1.0;
+    private static final double SPEED_COEFFICIENT = 1.0;
 
     private static final int SCREEN_HEIGHT = 700;
     private static final int SCREEN_WIDTH = 1200;
@@ -70,32 +69,7 @@ public class SandSim extends ApplicationAdapter {
         for (int i = 0; i < COLS; i++) {
             for (int j = 0; j < ROWS; j++) {
                 if (screenMatrix[i][j] == 1) {
-                    List<Integer> keyList = new ArrayList<>(Arrays.asList(i, j));
-                    Pebble pebble = sandPebbles.get(keyList);
-                    sandPebbles.remove(keyList);
-
-                    long timeTicksAlive = timeTick - pebble.getStartTick();
-                    int heightDelta = getHeightDelta(timeTicksAlive, pebble.getY(), SPEED_COEFFICIENT);
-
-                    if (heightDelta <= 0) {
-                        heightDelta = 0;
-                    }
-                    screenMatrix[i][j] = 0;
-                    if (screenMatrix[i][heightDelta] == 0) {
-                        screenMatrix[i][heightDelta] = 1;
-
-                        List<Integer> newKeyList = new ArrayList<>(Arrays.asList(i, heightDelta));
-                        sandPebbles.put(newKeyList, pebble);
-                    } else {
-                        int availableHeight = 1;
-                        while (screenMatrix[i][heightDelta + availableHeight] != 0) {
-                            availableHeight++;
-                        }
-                        screenMatrix[i][heightDelta + availableHeight] = 1;
-
-                        List<Integer> newKeyList = new ArrayList<>(Arrays.asList(i, heightDelta + availableHeight));
-                        sandPebbles.put(newKeyList, pebble);
-                    }
+                    movePebble(i, j);
 
                 }
             }
@@ -109,6 +83,44 @@ public class SandSim extends ApplicationAdapter {
                 }
             }
         }
+    }
+
+    private void movePebble(int i, int j) {
+        List<Integer> keyList = new ArrayList<>(Arrays.asList(i, j));
+        Pebble pebble = sandPebbles.get(keyList);
+        sandPebbles.remove(keyList);
+
+        long timeTicksAlive = timeTick - pebble.getStartTick();
+        int heightDelta = getHeightDelta(timeTicksAlive, pebble.getY(), SPEED_COEFFICIENT);
+
+        if (heightDelta <= 0) {
+            heightDelta = 0;
+        }
+        screenMatrix[i][j] = 0;
+        rePositionPebble(i, heightDelta, pebble);
+    }
+
+    private void rePositionPebble(int i, int heightDelta, Pebble pebble) {
+        if (screenMatrix[i][heightDelta] == 0) {
+            screenMatrix[i][heightDelta] = 1;
+            List<Integer> newKeyList = new ArrayList<>(Arrays.asList(i, heightDelta));
+            sandPebbles.put(newKeyList, pebble);
+        } else {
+            int availableHeight = setFirstAvailablePosition(i, heightDelta);
+            screenMatrix[i][heightDelta + availableHeight] = 1;
+            List<Integer> newKeyList = new ArrayList<>(Arrays.asList(i, heightDelta + availableHeight));
+            sandPebbles.put(newKeyList, pebble);
+        }
+    }
+
+    private int setFirstAvailablePosition(int i, int heightDelta) {
+        int availableHeight = 1;
+
+        while (screenMatrix[i][heightDelta + availableHeight] != 0) {
+            availableHeight++;
+        }
+
+        return availableHeight;
     }
 
     @Override
@@ -160,7 +172,7 @@ public class SandSim extends ApplicationAdapter {
         Pebble pebble = sandPebbles.get(position);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(pebble.getRed(), pebble.getGreen(), pebble.getBlue(), 0);
-        shapeRenderer.rect(i * SAND_SIZE, j * SAND_SIZE, SAND_SIZE, SAND_SIZE);
+        shapeRenderer.rect(i * (float)SAND_SIZE, j * (float)SAND_SIZE, SAND_SIZE, SAND_SIZE);
         shapeRenderer.end();
     }
 
