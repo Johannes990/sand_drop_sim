@@ -19,6 +19,7 @@ public class SandSim extends ApplicationAdapter {
     private static final int TICK_RATE = 10;
     private long initialTimeMillis;
     private long timeTick;
+    private final double SPEED_COEFFICIENT = 0.5;
 
     private static final int SCREEN_HEIGHT = 700;
     private static final int SCREEN_WIDTH = 1200;
@@ -51,10 +52,10 @@ public class SandSim extends ApplicationAdapter {
         camera.update();
 
         long currentTimeMillis = System.currentTimeMillis();
-        timeTick = getTimeTick(initialTimeMillis, currentTimeMillis, TICK_RATE);
+        timeTick = getTimeTick(initialTimeMillis, currentTimeMillis);
 
         if (Gdx.input.isTouched()) {
-            List<Integer> coordinates = getListOfCoordinates();
+            List<Integer> coordinates = getInitialCoordinates();
             int x = coordinates.get(0);
             int y = coordinates.get(1);
 
@@ -66,12 +67,33 @@ public class SandSim extends ApplicationAdapter {
         for (int i = 0; i < COLS; i++) {
             for (int j = 0; j < ROWS; j++) {
                 if (screenMatrix[i][j] == 1) {
+                    List<Integer> keyList = new ArrayList<>(Arrays.asList(i, j));
+                    Pebble pebble = sandPebbles.get(keyList);
+                    sandPebbles.remove(keyList);
+
+                    long timeTicksAlive = timeTick - pebble.getStartTick();
+                    int heightDelta = getHeightDelta(timeTicksAlive, pebble.getY(), SPEED_COEFFICIENT);
+                    System.out.println("Pebble started at height: " + pebble.getY());
+                    System.out.println("Height delta: " + heightDelta);
+                    System.out.println("Pebble's new height: " + (heightDelta));
+
+                    if (heightDelta <= 0) {
+                        heightDelta = 0;
+                    }
+                    screenMatrix[i][j] = 0;
+                    screenMatrix[i][heightDelta] = 1;
+
+                    List<Integer> newKeyList = new ArrayList<>(Arrays.asList(i, heightDelta));
+                    sandPebbles.put(newKeyList, pebble);
+                }
+            }
+        }
+
+        for (int i = 0; i < COLS; i++) {
+            for (int j = 0; j < ROWS; j++) {
+                if (screenMatrix[i][j] == 1) {
                     List<Integer> position = new ArrayList<>(Arrays.asList(i, j));
-                    Pebble pebble = sandPebbles.get(position);
-                    shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-                    shapeRenderer.setColor(pebble.getRed(), pebble.getGreen(), pebble.getBlue(), 0);
-                    shapeRenderer.rect((float) i * SAND_SIZE, (float) j * SAND_SIZE, SAND_SIZE, SAND_SIZE);
-                    shapeRenderer.end();
+                    renderPebble(position, i, j);
                 }
             }
         }
@@ -83,18 +105,33 @@ public class SandSim extends ApplicationAdapter {
         shapeRenderer.dispose();
     }
 
-    private long getTimeTick(long initialTimeMillis, long currentTimeMIllis, int tickRate) {
+    private long getTimeTick(long initialTimeMillis, long currentTimeMIllis) {
         long deltaMillis = currentTimeMIllis - initialTimeMillis;
         double deltaInSec = deltaMillis * 0.001;
-        return (long) (deltaInSec * tickRate);
+        return (long) (deltaInSec * SandSim.TICK_RATE);
     }
 
-    private List<Integer> getListOfCoordinates() {
+    private List<Integer> getInitialCoordinates() {
         Vector3 touchPos = new Vector3();
         touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
         camera.unproject(touchPos);
+
         int sandStartX = (int) (touchPos.x / SAND_SIZE);
+        if (sandStartX < 0) {
+            sandStartX = 0;
+        }
+        if (sandStartX >= COLS) {
+            sandStartX = COLS - 1;
+        }
+
         int sandStartY = (int) (touchPos.y / SAND_SIZE);
+        if (sandStartY < 0) {
+            sandStartY = 0;
+        }
+        if (sandStartY >= ROWS) {
+            sandStartY = ROWS - 1;
+        }
+
         return new ArrayList<>(Arrays.asList(sandStartX, sandStartY));
     }
 
@@ -102,6 +139,23 @@ public class SandSim extends ApplicationAdapter {
         screenMatrix[x][y] = 1;
         Pebble pebble = new Pebble(timeTick, x, y);
         sandPebbles.put(keyPair, pebble);
-        System.out.println("new pebble - red:" + pebble.getRed() + ", green:" + pebble.getGreen() + ", blue:" + pebble.getBlue());
+        System.out.println("new pebble - red:" + pebble.getRed() + ", green:" + pebble.getGreen() +
+                ", blue:" + pebble.getBlue() + ", x:" + pebble.getX() + ", y:" + pebble.getY());
+    }
+
+    private void renderPebble(List<Integer> position, int i, int j) {
+        Pebble pebble = sandPebbles.get(position);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(pebble.getRed(), pebble.getGreen(), pebble.getBlue(), 0);
+        shapeRenderer.rect(i * SAND_SIZE, j * SAND_SIZE, SAND_SIZE, SAND_SIZE);
+        shapeRenderer.end();
+    }
+
+    private double getDropSpeed(long timeTicksAlive, double speedCoeff) {
+        return Math.pow(timeTicksAlive, 2) * 0.01 * speedCoeff;
+    }
+
+    private int getHeightDelta(long timeTicksAlive, int previousHeight, double speedCoeff) {
+        return previousHeight - (int) getDropSpeed(timeTicksAlive, speedCoeff);
     }
 }
