@@ -11,15 +11,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SandSim extends ApplicationAdapter {
     private OrthographicCamera camera;
     private ShapeRenderer shapeRenderer;
 
-    private static final int TICK_RATE = 10;
+    private static final int TICK_RATE = 30;
     private long initialTimeMillis;
     private long timeTick;
-    private final double SPEED_COEFFICIENT = 0.5;
+    private final double SPEED_COEFFICIENT = 1.0;
 
     private static final int SCREEN_HEIGHT = 700;
     private static final int SCREEN_WIDTH = 1200;
@@ -29,6 +30,7 @@ public class SandSim extends ApplicationAdapter {
     private final int[][] screenMatrix = new int[COLS][ROWS];
 
     private HashMap<List<Integer>, Pebble> sandPebbles;
+    private List<Pebble> iterationList;
 
     @Override
     public void create() {
@@ -36,6 +38,7 @@ public class SandSim extends ApplicationAdapter {
         camera.setToOrtho(false, SCREEN_WIDTH, SCREEN_HEIGHT);
         shapeRenderer = new ShapeRenderer();
         sandPebbles = new HashMap<>();
+        iterationList = new ArrayList<>();
         for (int i = 0; i < COLS; i++) {
             for (int j = 0; j < ROWS; j++) {
                 screenMatrix[i][j] = 0;
@@ -73,18 +76,27 @@ public class SandSim extends ApplicationAdapter {
 
                     long timeTicksAlive = timeTick - pebble.getStartTick();
                     int heightDelta = getHeightDelta(timeTicksAlive, pebble.getY(), SPEED_COEFFICIENT);
-                    System.out.println("Pebble started at height: " + pebble.getY());
-                    System.out.println("Height delta: " + heightDelta);
-                    System.out.println("Pebble's new height: " + (heightDelta));
 
                     if (heightDelta <= 0) {
                         heightDelta = 0;
                     }
                     screenMatrix[i][j] = 0;
-                    screenMatrix[i][heightDelta] = 1;
+                    if (screenMatrix[i][heightDelta] == 0) {
+                        screenMatrix[i][heightDelta] = 1;
 
-                    List<Integer> newKeyList = new ArrayList<>(Arrays.asList(i, heightDelta));
-                    sandPebbles.put(newKeyList, pebble);
+                        List<Integer> newKeyList = new ArrayList<>(Arrays.asList(i, heightDelta));
+                        sandPebbles.put(newKeyList, pebble);
+                    } else {
+                        int availableHeight = 1;
+                        while (screenMatrix[i][heightDelta + availableHeight] != 0) {
+                            availableHeight++;
+                        }
+                        screenMatrix[i][heightDelta + availableHeight] = 1;
+
+                        List<Integer> newKeyList = new ArrayList<>(Arrays.asList(i, heightDelta + availableHeight));
+                        sandPebbles.put(newKeyList, pebble);
+                    }
+
                 }
             }
         }
@@ -139,6 +151,7 @@ public class SandSim extends ApplicationAdapter {
         screenMatrix[x][y] = 1;
         Pebble pebble = new Pebble(timeTick, x, y);
         sandPebbles.put(keyPair, pebble);
+        iterationList.add(pebble);
         System.out.println("new pebble - red:" + pebble.getRed() + ", green:" + pebble.getGreen() +
                 ", blue:" + pebble.getBlue() + ", x:" + pebble.getX() + ", y:" + pebble.getY());
     }
