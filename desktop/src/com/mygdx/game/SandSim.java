@@ -87,7 +87,7 @@ public class SandSim extends ApplicationAdapter {
         pebbleMap.remove(keyList);
 
         long timeTicksAlive = timeTick - pebble.getStartTick();
-        int heightDelta = getHeightDelta(timeTicksAlive, pebble.getY());
+        int heightDelta = getHeightDelta(timeTicksAlive, pebble.y);
 
         if (heightDelta <= 0) {
             heightDelta = 0;
