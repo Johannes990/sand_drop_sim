@@ -73,8 +73,6 @@ public class SandSim extends ApplicationAdapter {
         renderPebbles();
     }
 
-
-
     @Override
     public void dispose() {
         super.dispose();
