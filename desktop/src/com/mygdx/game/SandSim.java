@@ -19,8 +19,8 @@ public class SandSim extends ApplicationAdapter {
     private ShapeRenderer shapeRenderer;
     private Random random;
 
-    private static final int TICK_RATE = 60;
-    private static final float COLOR_RATE = 0.005f;
+    private static final int TICK_RATE = 20;
+    private static final float COLOR_RATE = 0.001f;
     private long initialTimeMillis;
     private long timeTick;
     private static final double SPEED_COEFFICIENT = 1.6;
@@ -84,7 +84,7 @@ public class SandSim extends ApplicationAdapter {
         Pebble pebble = pebbleMap.get(keyList);
         pebbleMap.remove(keyList);
 
-        long timeTicksAlive = timeTick - pebble.getStartTick();
+        long timeTicksAlive = timeTick - pebble.startTick;
         int heightDelta = getHeightDelta(timeTicksAlive, pebble.y);
 
         if (heightDelta <= 0) {
